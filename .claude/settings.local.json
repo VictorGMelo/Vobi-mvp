@@ -11,7 +11,8 @@
       "Bash(npx tsc *)",
       "Bash(rm -rf .next)",
       "Bash(npx next *)",
-      "Bash(node -e \"const fs=require\\('fs'\\); const s=fs.readFileSync\\('public/vobi-logo.svg','utf8'\\).trim\\(\\); console.log\\(Buffer.from\\(s,'utf8'\\).toString\\('base64'\\).length, 'bytes base64'\\)\")"
+      "Bash(node -e \"const fs=require\\('fs'\\); const s=fs.readFileSync\\('public/vobi-logo.svg','utf8'\\).trim\\(\\); console.log\\(Buffer.from\\(s,'utf8'\\).toString\\('base64'\\).length, 'bytes base64'\\)\")",
+      "Bash(npm run *)"
     ]
   }
 }

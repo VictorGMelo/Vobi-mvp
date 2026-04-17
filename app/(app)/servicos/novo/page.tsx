@@ -214,19 +214,6 @@ export default function NovoServicoPage() {
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-vobi-dark mb-1.5">
-                  Endereço da visita <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  name="endereco"
-                  placeholder="Rua, número, complemento, bairro"
-                  value={form.endereco}
-                  onChange={handleChange}
-                  error={fieldErrors.endereco}
-                />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-vobi-dark mb-1.5">
                   Estado <span className="text-red-500">*</span>
@@ -265,6 +252,19 @@ export default function NovoServicoPage() {
                 </select>
                 {fieldErrors.cidade && <p className="mt-1 text-xs text-red-600">{fieldErrors.cidade}</p>}
                 {cidadesError && <p className="mt-1 text-xs text-red-600">{cidadesError}</p>}
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-vobi-dark mb-1.5">
+                  Endereço da visita <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  name="endereco"
+                  placeholder="Rua, número, complemento, bairro"
+                  value={form.endereco}
+                  onChange={handleChange}
+                  error={fieldErrors.endereco}
+                />
               </div>
 
               <div>

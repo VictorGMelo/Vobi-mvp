@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { createServerClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { STATUS_FINAL_LABEL, type Servico } from '@/lib/types'
+import { type Servico } from '@/lib/types'
+import { ServicosView } from './ServicosView'
 
 export default async function ServicosPage() {
   const supabase = createServerClient()
@@ -16,8 +16,7 @@ export default async function ServicosPage() {
     .order('created_at', { ascending: false })
     .returns<Servico[]>()
 
-  const emAndamento = (servicos ?? []).filter((s) => s.status === 'em_andamento')
-  const finalizados = (servicos ?? []).filter((s) => s.status === 'finalizado')
+  const list = servicos ?? []
 
   return (
     <div className="p-4 sm:p-8">
@@ -36,7 +35,7 @@ export default async function ServicosPage() {
         </Link>
       </div>
 
-      {(!servicos || servicos.length === 0) && (
+      {list.length === 0 ? (
         <Card className="p-8 sm:p-12 flex flex-col items-center justify-center text-center">
           <div className="w-14 h-14 bg-vobi-primary-light rounded-xl flex items-center justify-center mb-4">
             <svg className="w-7 h-7 text-vobi-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -49,63 +48,9 @@ export default async function ServicosPage() {
             <Button size="sm">Criar primeira visita</Button>
           </Link>
         </Card>
-      )}
-
-      {emAndamento.length > 0 && (
-        <section className="mb-8">
-          <h2 className="text-xs font-semibold text-vobi-gray uppercase tracking-wider mb-3">Em andamento</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-            {emAndamento.map((s) => <ServicoCard key={s.id} servico={s} />)}
-          </div>
-        </section>
-      )}
-
-      {finalizados.length > 0 && (
-        <section>
-          <h2 className="text-xs font-semibold text-vobi-gray uppercase tracking-wider mb-3">Finalizados</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-            {finalizados.map((s) => <ServicoCard key={s.id} servico={s} />)}
-          </div>
-        </section>
+      ) : (
+        <ServicosView servicos={list} />
       )}
     </div>
-  )
-}
-
-function ServicoCard({ servico }: { servico: Servico }) {
-  const finalized = servico.status === 'finalizado'
-  const statusVariant: 'success' | 'warning' | 'danger' =
-    !finalized || !servico.status_final ? 'warning'
-      : servico.status_final === 'ok' ? 'success'
-      : servico.status_final === 'ajuste_realizado' ? 'warning'
-      : 'danger'
-  const statusLabel = finalized && servico.status_final ? STATUS_FINAL_LABEL[servico.status_final] : 'Em andamento'
-
-  return (
-    <Link href={`/servicos/${servico.id}`}>
-      <Card className="p-4 sm:p-5 hover:shadow-card-hover hover:border-vobi-primary/30 transition-all duration-200 cursor-pointer group h-full">
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <h3 className="font-semibold text-vobi-dark group-hover:text-vobi-primary transition-colors text-[15px] line-clamp-1 flex-1 min-w-0">
-            {servico.cliente_nome}
-          </h3>
-          <Badge variant={statusVariant}>{statusLabel}</Badge>
-        </div>
-
-        <p className="text-sm text-vobi-gray mb-1 line-clamp-1">
-          {servico.endereco}
-          {servico.cidade && servico.estado && ` · ${servico.cidade}/${servico.estado}`}
-        </p>
-        <p className="text-xs text-vobi-gray-light">Ar-condicionado · {servico.btus} BTUs</p>
-
-        <div className="mt-3 pt-3 border-t border-vobi-border flex items-center justify-between">
-          <span className="text-xs text-vobi-gray-light">
-            {new Date(servico.created_at).toLocaleDateString('pt-BR')}
-          </span>
-          <span className="text-xs text-vobi-primary font-semibold group-hover:underline">
-            {finalized ? 'Ver resumo →' : 'Abrir checklist →'}
-          </span>
-        </div>
-      </Card>
-    </Link>
   )
 }

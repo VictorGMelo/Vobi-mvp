@@ -34,10 +34,9 @@ export async function POST(req: NextRequest) {
       .returns<ChecklistItemRow[]>()
 
     const all = itens ?? []
-    const marcados = all.filter((i) => i.status !== 'pendente').length
-    const pct = all.length > 0 ? (marcados / all.length) * 100 : 0
-    if (pct < 50) {
-      return NextResponse.json({ error: 'Marque pelo menos 50% dos itens antes de gerar diagnóstico.' }, { status: 422 })
+    const pendentes = all.filter((i) => i.status === 'pendente').length
+    if (pendentes > 0) {
+      return NextResponse.json({ error: 'Marque todos os itens do checklist antes de gerar o diagnóstico.' }, { status: 422 })
     }
 
     const diagnostico = await generateDiagnostico({ servico, itens: all })

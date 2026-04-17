@@ -26,19 +26,31 @@ export default async function ResumoPage({ params }: { params: { id: string } })
 
   return (
     <div className="p-4 sm:p-8 max-w-3xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href={`/servicos/${params.id}`} className="text-vobi-gray hover:text-vobi-dark transition-colors">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-          </svg>
-        </Link>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-vobi-dark">Resumo do serviço</h1>
-          <p className="text-vobi-gray text-sm mt-0.5">
-            {servico.cliente_nome} · {servico.endereco}
-            {servico.cidade && servico.estado && ` · ${servico.cidade}/${servico.estado}`}
-          </p>
+      <div className="flex items-start justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href={`/servicos/${params.id}`} className="text-vobi-gray hover:text-vobi-dark transition-colors shrink-0" title="Voltar ao checklist">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+            </svg>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-vobi-dark">Resumo do serviço</h1>
+            <p className="text-vobi-gray text-sm mt-0.5">
+              {servico.cliente_nome} · {servico.endereco}
+              {servico.cidade && servico.estado && ` · ${servico.cidade}/${servico.estado}`}
+            </p>
+          </div>
         </div>
+
+        <Link
+          href="/servicos"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-white border border-vobi-border text-vobi-dark hover:bg-vobi-cream hover:border-vobi-gray-light transition-colors shrink-0"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+          </svg>
+          Lista de serviços
+        </Link>
       </div>
 
       {!isFinalized && (

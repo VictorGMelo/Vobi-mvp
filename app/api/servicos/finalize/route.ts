@@ -3,16 +3,20 @@ import { createServerClient } from '@/lib/supabase/server'
 import { nanoid } from 'nanoid'
 import { generateResumoNatural } from '@/lib/ai'
 import { sendSummaryEmail } from '@/lib/email'
-import type { StatusFinal } from '@/lib/types'
+import type { ChecklistItemRow, StatusFinal } from '@/lib/types'
 
-const VALID_FINAL = new Set<StatusFinal>(['ok', 'ajuste_realizado', 'retorno_necessario'])
+function computeStatusFinal(itens: ChecklistItemRow[]): StatusFinal {
+  if (itens.some((i) => i.status === 'problema')) return 'retorno_necessario'
+  if (itens.some((i) => i.status === 'ajustado')) return 'ajuste_realizado'
+  return 'ok'
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { servicoId, statusFinal } = await req.json() as { servicoId: string; statusFinal: StatusFinal }
+    const { servicoId } = await req.json() as { servicoId: string }
 
-    if (!servicoId || !VALID_FINAL.has(statusFinal)) {
-      return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
+    if (!servicoId) {
+      return NextResponse.json({ error: 'servicoId ausente' }, { status: 400 })
     }
 
     const supabase = createServerClient()
@@ -31,13 +35,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Serviço já finalizado' }, { status: 409 })
     }
 
+    if (!servico.diagnostico_ia?.trim()) {
+      return NextResponse.json({
+        error: 'Gere (e revise) a sugestão de diagnóstico antes de finalizar.',
+      }, { status: 422 })
+    }
+
     const { data: itens } = await supabase
       .from('checklist_items')
       .select('*')
       .eq('servico_id', servicoId)
       .order('ordem')
+      .returns<ChecklistItemRow[]>()
 
-    const pendentes = (itens ?? []).filter((i) => i.status === 'pendente')
+    const all = itens ?? []
+
+    const pendentes = all.filter((i) => i.status === 'pendente')
     if (pendentes.length > 0) {
       return NextResponse.json({
         error: 'Checklist incompleto',
@@ -45,7 +58,7 @@ export async function POST(req: NextRequest) {
       }, { status: 422 })
     }
 
-    const problemasSemObs = (itens ?? []).filter((i) => i.status === 'problema' && !i.observacao?.trim())
+    const problemasSemObs = all.filter((i) => i.status === 'problema' && !i.observacao?.trim())
     if (problemasSemObs.length > 0) {
       return NextResponse.json({
         error: 'Itens com "Problema" precisam de observação',
@@ -53,10 +66,12 @@ export async function POST(req: NextRequest) {
       }, { status: 422 })
     }
 
+    const statusFinal = computeStatusFinal(all)
+
     // Gerar resumo natural (IA)
     let resumoIa = ''
     try {
-      resumoIa = await generateResumoNatural({ servico, itens: itens ?? [] })
+      resumoIa = await generateResumoNatural({ servico, itens: all })
     } catch (err) {
       console.error('[finalize] falha no resumo IA', err)
       resumoIa = '' // segue sem resumo — pode ser regenerado
