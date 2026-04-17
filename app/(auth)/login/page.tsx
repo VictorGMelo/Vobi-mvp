@@ -118,7 +118,7 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-5">
-              <Link href="/register" className="text-vobi-primary font-semibold text-sm hover:underline">
+              <Link href="/forgot-password" className="text-vobi-primary font-semibold text-sm hover:underline">
                 Esqueceu a senha?
               </Link>
             </div>
@@ -141,10 +141,6 @@ export default function LoginPage() {
             </a>{' '}
             da Vobi.
           </span>
-          <div className="flex items-center gap-3 ml-auto">
-            <TrustBadge label="Google" sub="Safe browsing" colorDot="bg-blue-500" />
-            <TrustBadge label="SECURE" sub="SSL Encryption" colorDot="bg-green-500" />
-          </div>
         </div>
       </div>
 
@@ -209,14 +205,3 @@ export default function LoginPage() {
   )
 }
 
-function TrustBadge({ label, sub, colorDot }: { label: string; sub: string; colorDot: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md border border-vobi-border bg-white">
-      <span className={`w-2 h-2 rounded-full ${colorDot}`} />
-      <span className="flex flex-col leading-tight">
-        <span className="text-[11px] font-semibold text-vobi-dark">{label}</span>
-        <span className="text-[9px] text-vobi-gray-light">{sub}</span>
-      </span>
-    </span>
-  )
-}

@@ -12,6 +12,25 @@ const PAGE_SIZE_KEY = 'vobi:servicos:pageSize'
 const PAGE_SIZES = [10, 25, 50, 100]
 
 type View = 'cards' | 'list'
+type StatusFilter = 'todos' | 'em_andamento' | 'ok' | 'ajuste_realizado' | 'retorno_necessario'
+
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'todos', label: 'Todos os status' },
+  { value: 'em_andamento', label: 'Em andamento' },
+  { value: 'ok', label: 'OK' },
+  { value: 'ajuste_realizado', label: 'Ajuste Realizado' },
+  { value: 'retorno_necessario', label: 'Retorno Necessário' },
+]
+
+function normalize(text: string) {
+  return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+function matchesStatus(servico: Servico, filter: StatusFilter) {
+  if (filter === 'todos') return true
+  if (filter === 'em_andamento') return servico.status === 'em_andamento'
+  return servico.status === 'finalizado' && servico.status_final === filter
+}
 
 function getStatusBadge(servico: Servico) {
   const finalized = servico.status === 'finalizado'
@@ -29,6 +48,8 @@ export function ServicosView({ servicos }: { servicos: Servico[] }) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [mounted, setMounted] = useState(false)
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos')
 
   useEffect(() => {
     try {
@@ -51,20 +72,75 @@ export function ServicosView({ servicos }: { servicos: Servico[] }) {
     try { window.localStorage.setItem(PAGE_SIZE_KEY, String(n)) } catch {}
   }
 
-  const emAndamento = useMemo(() => servicos.filter((s) => s.status === 'em_andamento'), [servicos])
-  const finalizados = useMemo(() => servicos.filter((s) => s.status === 'finalizado'), [servicos])
+  const filtered = useMemo(() => {
+    const q = normalize(query.trim())
+    return servicos.filter((s) => {
+      if (!matchesStatus(s, statusFilter)) return false
+      if (!q) return true
+      return normalize(s.cliente_nome).includes(q)
+    })
+  }, [servicos, query, statusFilter])
 
-  const total = servicos.length
+  useEffect(() => {
+    setPage(1)
+  }, [query, statusFilter])
+
+  const emAndamento = useMemo(() => filtered.filter((s) => s.status === 'em_andamento'), [filtered])
+  const finalizados = useMemo(() => filtered.filter((s) => s.status === 'finalizado'), [filtered])
+
+  const total = filtered.length
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const currentPage = Math.min(page, totalPages)
   const startIdx = (currentPage - 1) * pageSize
   const endIdx = Math.min(startIdx + pageSize, total)
-  const paginated = servicos.slice(startIdx, endIdx)
+  const paginated = filtered.slice(startIdx, endIdx)
+
+  const hasFilters = query.trim() !== '' || statusFilter !== 'todos'
+  const noResults = mounted && filtered.length === 0
 
   return (
     <>
-      <div className="flex items-center justify-end mb-4">
-        <div className="inline-flex rounded-lg border border-vobi-border bg-white p-0.5" role="tablist" aria-label="Modo de visualização">
+      <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-vobi-gray-light pointer-events-none">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0011.454 11.454z" />
+            </svg>
+          </span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por cliente"
+            className="w-full pl-9 pr-9 py-2 text-sm rounded-lg bg-white border border-vobi-border text-vobi-dark placeholder:text-vobi-gray-light focus:outline-none focus:ring-2 focus:ring-vobi-primary/20 focus:border-vobi-primary transition-colors"
+            aria-label="Buscar por cliente"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-vobi-gray-light hover:text-vobi-dark transition-colors p-1"
+              aria-label="Limpar busca"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          className="px-3 py-2 text-sm rounded-lg bg-white border border-vobi-border text-vobi-dark focus:outline-none focus:ring-2 focus:ring-vobi-primary/20 focus:border-vobi-primary transition-colors"
+          aria-label="Filtrar por status"
+        >
+          {STATUS_FILTER_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        <div className="inline-flex rounded-lg border border-vobi-border bg-white p-0.5 ml-auto" role="tablist" aria-label="Modo de visualização">
           <button
             type="button"
             onClick={() => changeView('cards')}
@@ -98,6 +174,29 @@ export function ServicosView({ servicos }: { servicos: Servico[] }) {
 
       {!mounted ? null : view === 'cards' ? (
         <>
+          {noResults && (
+            <Card className="p-8 flex flex-col items-center justify-center text-center">
+              <div className="w-12 h-12 bg-vobi-cream rounded-xl flex items-center justify-center mb-3">
+                <svg className="w-6 h-6 text-vobi-gray-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0011.454 11.454z" />
+                </svg>
+              </div>
+              <h3 className="text-vobi-dark font-semibold mb-1">Nenhum serviço encontrado</h3>
+              <p className="text-vobi-gray text-sm mb-4">
+                {hasFilters ? 'Ajuste a busca ou o filtro para ver mais resultados.' : 'Nenhum registro disponível.'}
+              </p>
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={() => { setQuery(''); setStatusFilter('todos') }}
+                  className="text-vobi-primary font-semibold text-sm hover:underline"
+                >
+                  Limpar filtros
+                </button>
+              )}
+            </Card>
+          )}
+
           {emAndamento.length > 0 && (
             <section className="mb-8">
               <h2 className="text-xs font-semibold text-vobi-gray uppercase tracking-wider mb-3">Em andamento</h2>
@@ -131,7 +230,7 @@ export function ServicosView({ servicos }: { servicos: Servico[] }) {
                 {paginated.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="px-4 py-10 text-center text-sm text-vobi-gray">
-                      Nenhum serviço cadastrado.
+                      {hasFilters ? 'Nenhum serviço corresponde aos filtros.' : 'Nenhum serviço cadastrado.'}
                     </td>
                   </tr>
                 ) : paginated.map((s) => {
