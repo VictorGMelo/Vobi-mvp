@@ -126,7 +126,9 @@ export default function NovoServicoPage() {
       errs.btus = 'Informe a capacidade em BTUs (número inteiro)'
     }
 
-    if (form.cliente_email.trim() && !EMAIL_RE.test(form.cliente_email.trim())) {
+    if (!form.cliente_email.trim()) {
+      errs.cliente_email = 'Obrigatório'
+    } else if (!EMAIL_RE.test(form.cliente_email.trim())) {
       errs.cliente_email = 'E-mail inválido'
     }
 
@@ -269,8 +271,7 @@ export default function NovoServicoPage() {
 
               <div>
                 <label className="block text-sm font-medium text-vobi-dark mb-1.5">
-                  E-mail do cliente
-                  <span className="ml-1 text-vobi-gray-light font-normal text-xs">(para envio do resumo)</span>
+                  E-mail do cliente <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="email"
